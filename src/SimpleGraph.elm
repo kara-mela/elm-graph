@@ -67,7 +67,7 @@ type Option
     | YTickmarks Int
     | DeltaX Float
     | Scale Float Float
-    | LineWidth Float
+    | StrokeWidth Float
 
 
 {-| A DataWindow is a rectangle which determines
@@ -448,8 +448,7 @@ segmentToSVG options ( ( x1, y1 ), ( x2, y2 ) ) =
         , SA.x2 (String.fromFloat x2)
         , SA.y2 (String.fromFloat y2)
         , SA.stroke <| lineColor options
-        --, SA.strokeWidth "1"
-        , SA.strokeWidth <| String.fromFloat ( lineWidth options)
+        , SA.strokeWidth <| String.fromFloat ( strokeWidth options )
         ]
         []
 
@@ -540,16 +539,16 @@ scale_ option =
             Nothing
 
 
-lineWidth : List Option -> Float
-lineWidth options =
-    findMap lineWidth_ options |> Maybe.withDefault 1.0
+strokeWidth : List Option -> Float
+strokeWidth options =
+    findMap strokeWidth_ options |> Maybe.withDefault 1.0
 
 
-lineWidth_ : Option -> Maybe Float
-lineWidth_ option =
+strokeWidth_ : Option -> Maybe Float
+strokeWidth_ option =
     case option of
-        LineWidth k ->
-            Just k
+        StrokeWidth w ->
+            Just w
 
         _ ->
             Nothing
