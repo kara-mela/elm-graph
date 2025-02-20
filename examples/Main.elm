@@ -39,6 +39,12 @@ lineGraphAttributes =
     , options = [ Color "blue", YTickmarks 4, Scale 1.0 1.0 ]
     }
 
+lineGraphAttributes2 =
+    { graphHeight = 100
+    , graphWidth = 400
+    , options = [ Color "blue", YTickmarks 4, LineWidth 3, Scale 1.0 1.0 ]
+    }
+
 scatterPlotAttributes =
     { graphHeight = 200
     , graphWidth = 200
@@ -116,6 +122,7 @@ mainColumn model =
             , row [] [ lineChart lineGraphAttributes lineData |> Element.html ]
             , row [] [ barChart barGraphAttributes barData |> Element.html ]
             , row [] [ scatterPlot scatterPlotAttributes scatterData |> Element.html]
+            , row [] [ lineChart lineGraphAttributes2 lineData |> Element.html ]
             ]
         ]
 
