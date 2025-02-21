@@ -40,6 +40,7 @@ type alias GraphAttributes =
     , graphWidth : Float
     , xTickmarks : Int
     , yTickmarks : Int
+    , scale : ( Float, Float)
     , options : List Option
     }
 
@@ -66,7 +67,6 @@ the misbehavor of Safari, which presents the graphs upside down (!!)
 type Option
     = Color String
     | DeltaX Float
-    | Scale Float Float
     | StrokeWidth Float
 
 
@@ -194,7 +194,7 @@ buildSVGTransformString : GraphAttributes -> String
 buildSVGTransformString ga =
     let
         ( kx, ky ) =
-            scale ga.options
+            ga.scale
 
         scaleString =
             "scale(" ++ (String.fromFloat kx) ++ ", " ++ String.fromFloat ky ++ ")"
@@ -524,19 +524,19 @@ lineColor_ option =
 --            Nothing
 
 
-scale : List Option -> ( Float, Float )
-scale options =
-    findMap scale_ options |> Maybe.withDefault ( 1.0, 1.0 )
+--scale : List Option -> ( Float, Float )
+--scale options =
+--    findMap scale_ options |> Maybe.withDefault ( 1.0, 1.0 )
 
 
-scale_ : Option -> Maybe ( Float, Float )
-scale_ option =
-    case option of
-        Scale kx ky ->
-            Just ( kx, ky )
+--scale_ : Option -> Maybe ( Float, Float )
+--scale_ option =
+--    case option of
+--        Scale kx ky ->
+--            Just ( kx, ky )
 
-        _ ->
-            Nothing
+--        _ ->
+--            Nothing
 
 
 strokeWidth : List Option -> Float
