@@ -27,7 +27,8 @@ lineGraphAttributes =
     { graphHeight = 100
     , graphWidth = 400
     , xTickmarks  = 6
-    , options = [ Color "#067DB4", YTickmarks 4, Scale 1.0 1.0, StrokeWidth 3.0 ]
+    , yTickmarks = 4 
+    , options = [ Color "#067DB4", Scale 1.0 1.0, StrokeWidth 3.0 ]
     }
 
 

@@ -39,6 +39,7 @@ type alias GraphAttributes =
     { graphHeight : Float
     , graphWidth : Float
     , xTickmarks : Int
+    , yTickmarks : Int
     , options : List Option
     }
 
@@ -65,7 +66,6 @@ the misbehavor of Safari, which presents the graphs upside down (!!)
 type Option
     = Color String
     | DeltaX Float
-    | YTickmarks Int
     | Scale Float Float
     | StrokeWidth Float
 
@@ -170,19 +170,19 @@ lineChartAsSVGWithDataWindow dw ga data =
 
         boundingBox_ : Svg msg
         boundingBox_ =
-            boundingBox ga ga.options dw |> renderPlain
+            boundingBox ga dw |> renderPlain
 
         xTickMarks_ =
             makeXTickMarks scaleFactor renderPlain dw ga.xTickmarks
 
         yTickMarks_ =
-            makeYTickMarks scaleFactor renderPlain dw (yTickmarks ga.options)
+            makeYTickMarks scaleFactor renderPlain dw ga.yTickmarks
 
         xLabels =
             makeXLabels scaleFactor dw ga.xTickmarks
 
         yLabels =
-            makeYLabels scaleFactor dw (yTickmarks ga.options)
+            makeYLabels scaleFactor dw ga.yTickmarks
 
         transformer =
             SA.transform (buildSVGTransformString ga)
@@ -329,7 +329,7 @@ scatterPlotAsSVG ga data =
 
         boundingBox_ : Svg msg
         boundingBox_ =
-                boundingBox ga ga.options {dw | xMax = dw.xMax + diameter/xScaleFactor, yMax = dw.yMax + diameter/yScaleFactor} |> renderPlain
+                boundingBox ga {dw | xMax = dw.xMax + diameter/xScaleFactor, yMax = dw.yMax + diameter/yScaleFactor} |> renderPlain
 
         --xTickmarks2 =
         --    bxTickmarks ga
@@ -372,9 +372,9 @@ translate ( dx, dy ) data =
     List.map (\( x, y ) -> ( x + dx, y + dy )) data
 
 
-boundingBox : GraphAttributes -> List Option -> DataWindow -> List Point
-boundingBox ga options dw =
-    case ( ga.xTickmarks, yTickmarks options ) of
+boundingBox : GraphAttributes -> DataWindow -> List Point
+boundingBox ga dw =
+    case ( ga.xTickmarks, ga.yTickmarks ) of
         ( 0, 0 ) ->
             []
 
@@ -509,19 +509,19 @@ lineColor_ option =
 --            Nothing
 
 
-yTickmarks : List Option -> Int
-yTickmarks options =
-    findMap yTickmarks_ options |> Maybe.withDefault 0
+--yTickmarks : List Option -> Int
+--yTickmarks options =
+--    findMap yTickmarks_ options |> Maybe.withDefault 0
 
 
-yTickmarks_ : Option -> Maybe Int
-yTickmarks_ option =
-    case option of
-        YTickmarks k ->
-            Just k
-
-        _ ->
-            Nothing
+--yTickmarks_ : Option -> Maybe Int
+--yTickmarks_ option =
+--    case option of
+--        YTickmarks k ->
+--            Just k
+--
+--        _ ->
+--            Nothing
 
 
 scale : List Option -> ( Float, Float )
@@ -739,7 +739,7 @@ byTickmarks : GraphAttributes -> Svg msg
 byTickmarks ga =
     let
         n =
-            yTickmarks ga.options
+            ga.yTickmarks
     in
         List.range 0 (n - 1)
             |> List.map (\k -> (toFloat k) * ga.graphHeight / (toFloat (n - 1)))
@@ -792,7 +792,7 @@ bMakeYLabels : Float -> GraphAttributes -> Svg msg
 bMakeYLabels yMax ga =
     let
         n =
-            yTickmarks ga.options
+            ga.yTickmarks
     in
         case n == 0 of
             True ->
