@@ -1,8 +1,7 @@
 module SimpleGraph exposing (Point, GraphAttributes, Option(..)
-   , DataWindow, lineChart, lineChartAsSVG
+   , DataWindow, lineChart--, lineChartAsSVG
    , barChart, lineChartWithDataWindow, lineChartAsSVGWithDataWindow, barChartAsSVG
-   , scatterPlot, scatterPlotAsSVG
-   , myLineChartWithDataWindow, getDataWindow)
+   , scatterPlot, scatterPlotAsSVG)
 
 {-| **SimpleGraph** is a bare-bones package for rendering data as
 line and bar charts, both as HTML and as SVG.
@@ -39,7 +38,10 @@ line.
 type alias GraphAttributes =
     { graphHeight : Float
     , graphWidth : Float
-    , options : List Option
+    , xTickmarks : Int
+    , yTickmarks : Int
+    , scale : ( Float, Float)
+    , options : List ( List Option ) 
     }
 
 
@@ -64,10 +66,8 @@ the misbehavor of Safari, which presents the graphs upside down (!!)
 -}
 type Option
     = Color String
-    | XTickmarks Int
-    | YTickmarks Int
     | DeltaX Float
-    | Scale Float Float
+    | StrokeWidth Float
 
 
 {-| A DataWindow is a rectangle which determines
@@ -105,17 +105,17 @@ the appearance of the graph -- width, height, color,
 tick marks on the axes. The x-coordinates of the
 data are assumed to be in increasing order.
 -}
-lineChart : GraphAttributes -> List Point -> Html msg
+lineChart : GraphAttributes -> List ( List Point ) -> Html msg
 lineChart ga data =
     lineChartWithDataWindow (getDataWindow data) ga data
 
 
-{-| Render a list of points to SVG as a line chart using the parameters
-of GraphAttributes.
--}
-lineChartAsSVG : GraphAttributes -> List Point -> Svg msg
-lineChartAsSVG ga data =
-    lineChartAsSVGWithDataWindow (getDataWindow data) ga data
+--{-| Render a list of points to SVG as a line chart using the parameters
+--of GraphAttributes.
+---}
+--lineChartAsSVG : GraphAttributes -> List Point -> Svg msg
+--lineChartAsSVG ga data =
+--    lineChartAsSVGWithDataWindow (getDataWindow data) ga data
 
 
 {-| This function is like lineChart, but with the additional
@@ -123,7 +123,7 @@ DataWindow parameter. A DataWindow defines the range of
 x and y coordinates that are displayed. In lineChart, the
 DataWindow is deduced from the data presented.
 -}
-lineChartWithDataWindow : DataWindow -> GraphAttributes -> List Point -> Html msg
+lineChartWithDataWindow : DataWindow -> GraphAttributes -> List ( List Point ) -> Html msg
 lineChartWithDataWindow dw ga data =
     svg
         [ SA.transform "scale(1,-1)"
@@ -137,19 +137,30 @@ lineChartWithDataWindow dw ga data =
 {-| Render a list of points to Svg as a line chart using the parameters
 of GraphAttributes and DataWindow.
 -}
-lineChartAsSVGWithDataWindow : DataWindow -> GraphAttributes -> List Point -> Svg msg
+lineChartAsSVGWithDataWindow : DataWindow -> GraphAttributes -> List ( List Point ) -> Svg msg
 lineChartAsSVGWithDataWindow dw ga data =
     let
         scaleFactor =
             getScaleFactor dw ga
 
-        render : List Point -> Svg msg
+        --render : List Point -> Svg msg
+        --render data_ =
+        --    data_
+        --        |> translate ( -dw.xMin, -dw.yMin )
+        --        |> rescale scaleFactor
+        --        |> segments
+        --        |> segmentsToSVG ga.options
+        render : List ( List Point ) -> Svg msg
         render data_ =
+            List.map ( \(o, d) -> render_singledata o d ) ga.options data_
+
+        render_singledata  : List String -> List Point -> Svg msg
+        render_singledata options data_ =
             data_
                 |> translate ( -dw.xMin, -dw.yMin )
                 |> rescale scaleFactor
                 |> segments
-                |> segmentsToSVG ga.options
+                |> segmentsToSVG options
 
         renderPlain : List Point -> Svg msg
         renderPlain data_ =
@@ -160,7 +171,8 @@ lineChartAsSVGWithDataWindow dw ga data =
                 |> segmentsToSVG []
 
         theData =
-            data |> render
+            --data |> render
+            List.concatMap ( \d -> render d ) data
 
         abscissa =
             [ ( dw.xMin, 0 ), ( dw.xMax, 0 ) ] |> renderPlain
@@ -170,31 +182,32 @@ lineChartAsSVGWithDataWindow dw ga data =
 
         boundingBox_ : Svg msg
         boundingBox_ =
-            boundingBox ga.options dw |> renderPlain
+            boundingBox ga dw |> renderPlain
 
         xTickMarks_ =
-            makeXTickMarks scaleFactor renderPlain dw (xTickmarks ga.options)
+            makeXTickMarks scaleFactor renderPlain dw ga.xTickmarks
 
         yTickMarks_ =
-            makeYTickMarks scaleFactor renderPlain dw (yTickmarks ga.options)
+            makeYTickMarks scaleFactor renderPlain dw ga.yTickmarks
 
         xLabels =
-            makeXLabels scaleFactor dw (xTickmarks ga.options)
+            makeXLabels scaleFactor dw ga.xTickmarks
 
         yLabels =
-            makeYLabels scaleFactor dw (yTickmarks ga.options)
+            makeYLabels scaleFactor dw ga.yTickmarks
 
         transformer =
             SA.transform (buildSVGTransformString ga)
     in
-        g [ transformer ] [ theData, abscissa, ordinate, boundingBox_, xTickMarks_, yTickMarks_, xLabels, yLabels ]
+        --g [ transformer ] [ theData, abscissa, ordinate, boundingBox_, xTickMarks_, yTickMarks_, xLabels, yLabels ]
+        g [ transformer ] ( theData ++ [abscissa, ordinate, boundingBox_, xTickMarks_, yTickMarks_, xLabels, yLabels] )
 
 
 buildSVGTransformString : GraphAttributes -> String
 buildSVGTransformString ga =
     let
         ( kx, ky ) =
-            scale ga.options
+            ga.scale
 
         scaleString =
             "scale(" ++ (String.fromFloat kx) ++ ", " ++ String.fromFloat ky ++ ")"
@@ -285,7 +298,7 @@ barChartAsSVG ga data =
 
 {-| Make a scatter plot of a list points, render as Html
 -}
-scatterPlot : GraphAttributes -> List Point -> Html msg
+scatterPlot : GraphAttributes -> List ( List Point ) -> Html msg
 scatterPlot ga data =
     svg
         [ SA.transform "scale(1,-1)"
@@ -298,7 +311,7 @@ scatterPlot ga data =
 
 {-| Make a scatter plot of a list points, render as SVG
 -}
-scatterPlotAsSVG : GraphAttributes -> List Point -> Svg msg
+scatterPlotAsSVG : GraphAttributes -> List ( List Point ) -> Svg msg
 scatterPlotAsSVG ga data =
     let
         dw = getDataWindow data
@@ -311,10 +324,26 @@ scatterPlotAsSVG ga data =
 
         diameter =
             4.0
-         -- dot color diameter x y
-        dot_ : (Float, Float) -> Svg msg
-        dot_ =
-            \( x, y ) -> dot (lineColor ga.options) diameter x y
+
+        --dot_ : (Float, Float) -> Svg msg
+        --dot_ point =
+        --    my_dot_ ( lineColors ga.options ) point
+        --dot_ point = 
+        --    let 
+        --        (x, y) = point
+        --    in
+        --        dot ( lineColor ga.options ) diameter x y
+
+        my_dot_ : String -> (Float, Float) -> Svg msg
+        my_dot_ color point = 
+            let 
+                (x, y) = point
+            in
+                dot color diameter x y
+            
+        dots_ : String -> List (Float, Float) -> List ( Svg msg )
+        dots_ color points =
+            List.map ( \p -> my_dot_ color p ) points
 
         scaleFactor =
             getScaleFactor dw ga
@@ -329,7 +358,7 @@ scatterPlotAsSVG ga data =
 
         boundingBox_ : Svg msg
         boundingBox_ =
-                boundingBox ga.options {dw | xMax = dw.xMax + diameter/xScaleFactor, yMax = dw.yMax + diameter/yScaleFactor} |> renderPlain
+                boundingBox ga {dw | xMax = dw.xMax + diameter/xScaleFactor, yMax = dw.yMax + diameter/yScaleFactor} |> renderPlain
 
         --xTickmarks2 =
         --    bxTickmarks ga
@@ -344,10 +373,14 @@ scatterPlotAsSVG ga data =
         transformer =
             SA.transform (buildSVGTransformString ga)
 
-        rescaledData = List.map (\(x,y) -> (xScaleFactor*x, yScaleFactor*y)) data
+        rescaledData = 
+            --List.map (\(x,y) -> (xScaleFactor*x, yScaleFactor*y)) data
+            List.map ( \l -> List.map ( \(x,y) -> (xScaleFactor*x, yScaleFactor*y) ) l ) data 
 
         rendered : List (Svg msg)
-        rendered =   List.map dot_ rescaledData
+        rendered =
+            --List.map dot_ rescaledData
+            List.concat ( List.map2 dots_ ( lineColors ga.options ) rescaledData )
     in
         g [ transformer ]  (rendered ++ [boundingBox_])
 
@@ -372,9 +405,9 @@ translate ( dx, dy ) data =
     List.map (\( x, y ) -> ( x + dx, y + dy )) data
 
 
-boundingBox : List Option -> DataWindow -> List Point
-boundingBox options dw =
-    case ( xTickmarks options, yTickmarks options ) of
+boundingBox : GraphAttributes -> DataWindow -> List Point
+boundingBox ga dw =
+    case ( ga.xTickmarks, ga.yTickmarks ) of
         ( 0, 0 ) ->
             []
 
@@ -385,31 +418,33 @@ boundingBox options dw =
 {-| Create a DataWindow from a list of points. This will
 be the smallest rectangle containing the data.
 -}
-getDataWindow : List Point -> DataWindow
+getDataWindow : List ( List Point ) -> DataWindow
 getDataWindow pointList =
     let
-        xs =
-            List.map Tuple.first pointList
+        getXs : List Point -> List Float
+        getXs pl = 
+            List.map Tuple.first pl
+            
+        getYs : List Point -> List Float
+        getYs pl = 
+            List.map Tuple.second pl
+            
+        getMin : List Float -> Float
+        getMin l =
+            List.minimum l |> Maybe.withDefault 0
+            
+        getMax : List Float -> Float
+        getMax l =
+            List.maximum l |> Maybe.withDefault 0
+   
+        xs = List.concatMap ( \list -> getXs pointList ) pointList
+        ys = List.concatMap ( \list -> getYs pointList ) pointList    
 
-        ys =
-            List.map Tuple.second pointList
-
-        xMin =
-            List.minimum xs |> Maybe.withDefault 0
-
-        xMax =
-            List.maximum xs |> Maybe.withDefault 0
-
-        yMin =
-            List.minimum ys |> Maybe.withDefault 0
-
-        yMax =
-            List.maximum ys |> Maybe.withDefault 0
     in
-        { xMin = xMin
-        , xMax = xMax
-        , yMin = yMin
-        , yMax = yMax
+        { xMin = getMin xs
+        , xMax = getMax xs
+        , yMin = getMin ys
+        , yMax = getMax ys
         }
 
 
@@ -448,7 +483,7 @@ segmentToSVG options ( ( x1, y1 ), ( x2, y2 ) ) =
         , SA.x2 (String.fromFloat x2)
         , SA.y2 (String.fromFloat y2)
         , SA.stroke <| lineColor options
-        , SA.strokeWidth "1"
+        , SA.strokeWidth <| String.fromFloat ( strokeWidth options )
         ]
         []
 
@@ -479,6 +514,17 @@ deltaX_ option =
             Nothing
 
 
+lineColors : List ( List Option ) -> List String
+lineColors options =
+    let
+        getOption : List Option -> String
+        getOption o = 
+            findMap lineColor_ o |> Maybe.withDefault "rgb(40, 40, 40)"
+            
+    in
+        List.map ( \o -> getOption o ) options
+
+
 lineColor : List Option -> String
 lineColor options =
     findMap lineColor_ options |> Maybe.withDefault "rgb(40, 40, 40)"
@@ -494,61 +540,61 @@ lineColor_ option =
             Nothing
 
 
-lineColors : List Option -> List String
-lineColors options =
-    findMap lineColors_ options
+--xTickmarks : List Option -> Int
+--xTickmarks options =
+--    findMap xTickmarks_ options |> Maybe.withDefault 0
 
 
-lineColors_ : Option -> List String
-lineColors_ option =
+--xTickmarks_ : Option -> Maybe Int
+--xTickmarks_ option =
+--    case option of
+--        XTickmarks k ->
+--            Just k
+--
+--        _ ->
+--            Nothing
+
+
+--yTickmarks : List Option -> Int
+--yTickmarks options =
+--    findMap yTickmarks_ options |> Maybe.withDefault 0
+
+
+--yTickmarks_ : Option -> Maybe Int
+--yTickmarks_ option =
+--    case option of
+--        YTickmarks k ->
+--            Just k
+--
+--        _ ->
+--            Nothing
+
+
+--scale : List Option -> ( Float, Float )
+--scale options =
+--    findMap scale_ options |> Maybe.withDefault ( 1.0, 1.0 )
+
+
+--scale_ : Option -> Maybe ( Float, Float )
+--scale_ option =
+--    case option of
+--        Scale kx ky ->
+--            Just ( kx, ky )
+
+--        _ ->
+--            Nothing
+
+
+strokeWidth : List Option -> Float
+strokeWidth options =
+    findMap strokeWidth_ options |> Maybe.withDefault 1.0
+
+
+strokeWidth_ : Option -> Maybe Float
+strokeWidth_ option =
     case option of
-        Color str ->
-            String.split ", " str -- List
-
-        _ ->
-            Nothing
-
-
-xTickmarks : List Option -> Int
-xTickmarks options =
-    findMap xTickmarks_ options |> Maybe.withDefault 0
-
-
-xTickmarks_ : Option -> Maybe Int
-xTickmarks_ option =
-    case option of
-        XTickmarks k ->
-            Just k
-
-        _ ->
-            Nothing
-
-
-yTickmarks : List Option -> Int
-yTickmarks options =
-    findMap yTickmarks_ options |> Maybe.withDefault 0
-
-
-yTickmarks_ : Option -> Maybe Int
-yTickmarks_ option =
-    case option of
-        YTickmarks k ->
-            Just k
-
-        _ ->
-            Nothing
-
-
-scale : List Option -> ( Float, Float )
-scale options =
-    findMap scale_ options |> Maybe.withDefault ( 1.0, 1.0 )
-
-
-scale_ : Option -> Maybe ( Float, Float )
-scale_ option =
-    case option of
-        Scale kx ky ->
-            Just ( kx, ky )
+        StrokeWidth w ->
+            Just w
 
         _ ->
             Nothing
@@ -739,7 +785,7 @@ byTickmarks : GraphAttributes -> Svg msg
 byTickmarks ga =
     let
         n =
-            yTickmarks ga.options
+            ga.yTickmarks
     in
         List.range 0 (n - 1)
             |> List.map (\k -> (toFloat k) * ga.graphHeight / (toFloat (n - 1)))
@@ -756,7 +802,7 @@ bxTickmarks : GraphAttributes -> Svg msg
 bxTickmarks ga =
     let
         dx =
-            (toFloat <| xTickmarks ga.options) * (deltaX ga.options)
+            (toFloat <|  ga.xTickmarks) * (deltaX ga.options)
 
         n =
             round <| ga.graphWidth / dx
@@ -792,7 +838,7 @@ bMakeYLabels : Float -> GraphAttributes -> Svg msg
 bMakeYLabels yMax ga =
     let
         n =
-            yTickmarks ga.options
+            ga.yTickmarks
     in
         case n == 0 of
             True ->
@@ -833,115 +879,3 @@ roundTo k x =
             toFloat k
     in
         x * 10.0 ^ kk |> round |> toFloat |> (\y -> y / 10.0 ^ kk)
-        
-        
-        
-        
-        
-        
-        
-
-        
-        
-myLineChartWithDataWindow : GraphAttributes -> List ( List Point ) -> Html msg
-myLineChartWithDataWindow ga data =
-    let
-        dw = getMyDataWindow data
-    in
-        svg
-            [ SA.transform "scale(1,-1)"
-            , SA.height <| String.fromFloat (ga.graphHeight + 40)
-            , SA.width <| String.fromFloat (ga.graphWidth + 50)
-            , SA.viewBox <| "-40 -20 " ++ String.fromFloat (ga.graphWidth + 50) ++ " " ++ String.fromFloat (ga.graphHeight + 40)
-            ]
-            [ myLineChartAsSVGWithDataWindow dw ga data ]
-
-
-getMyDataWindow : List ( List Point ) -> DataWindow
-getMyDataWindow pointList =
-    let
-        getXs : List Point -> List Float
-        getXs pl = 
-            List.map Tuple.first pl
-            
-        getYs : List Point -> List Float
-        getYs pl = 
-            List.map Tuple.second pl
-            
-        getMin : List Float -> Float
-        getMin l =
-            List.minimum l |> Maybe.withDefault 0
-            
-        getMax : List Float -> Float
-        getMax l =
-            List.maximum l |> Maybe.withDefault 0
-   
-        xs = List.concatMap ( \list -> getXs list ) pointList
-        ys = List.concatMap ( \list -> getYs list ) pointList    
-
-    in
-        { xMin = getMin xs
-        , xMax = getMax xs
-        , yMin = getMin ys
-        , yMax = getMax ys
-        }
-        
-
-myLineChartAsSVGWithDataWindow : DataWindow -> GraphAttributes -> List ( List Point ) -> Svg msg
-myLineChartAsSVGWithDataWindow dw ga data =
-    let
-        scaleFactor =
-            getScaleFactor dw ga
-
-        renderPlain : List Point -> Svg msg
-        renderPlain data_ =
-            data_
-                |> translate ( -dw.xMin, -dw.yMin )
-                |> rescale scaleFactor
-                |> segments
-                |> segmentsToSVG []
-
-        --render : List Point -> Svg msg
-        render : List ( List Point ) -> List ( Svg msg )
-        render data_ =
-            let 
-                transform : List Point -> Svg msg
-                transform dat =
-                    dat
-                        |> translate ( -dw.xMin, -dw.yMin )
-                        |> rescale scaleFactor
-                        |> segments
-                        |> segmentsToSVG ga.options
-            in 
-                List.map ( \d -> transform d ) data_
-
-        theData =
-            data |> render
-            --List.concatMap ( \d -> render d ) data
-
-        abscissa =
-            [ ( dw.xMin, 0 ), ( dw.xMax, 0 ) ] |> renderPlain
-
-        ordinate =
-            [ ( dw.xMin, dw.yMin ), ( dw.xMin, dw.yMax ) ] |> renderPlain
-
-        boundingBox_ : Svg msg
-        boundingBox_ =
-            boundingBox ga.options dw |> renderPlain
-
-        xTickMarks_ =
-            makeXTickMarks scaleFactor renderPlain dw (xTickmarks ga.options)
-
-        yTickMarks_ =
-            makeYTickMarks scaleFactor renderPlain dw (yTickmarks ga.options)
-
-        xLabels =
-            makeXLabels scaleFactor dw (xTickmarks ga.options)
-
-        yLabels =
-            makeYLabels scaleFactor dw (yTickmarks ga.options)
-
-        transformer =
-            SA.transform (buildSVGTransformString ga)
-    in
-        g [ transformer ] ( theData ++ [abscissa, ordinate, boundingBox_, xTickMarks_, yTickMarks_, xLabels, yLabels] )

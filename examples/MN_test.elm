@@ -7,7 +7,7 @@ import Html exposing (Html)
 import Element exposing (..)
 import Element.Background as Background
 import Element.Font as Font
-import SimpleGraph exposing (Option(..), barChart, lineChart, scatterPlot)
+import SimpleGraph exposing (Option(..), barChart, lineChart, scatterPlot, myLineChartWithDataWindow)
 
 
 --
@@ -18,18 +18,23 @@ import SimpleGraph exposing (Option(..), barChart, lineChart, scatterPlot)
 lineData : List ( Float, Float )
 lineData =
     [ ( -20, 0 ), ( -10, -10 ), ( 0, 0 ), ( 10, 10 ), ( 20, 0 ), ( 30, 15 ), ( 40, 0 ), ( 50, -30 ), ( 60, 0 ) ]
+    
+data : List ( List ( Float, Float ) )
+data =
+    [ [ ( -20, 0 ), ( -10, -10 ) ]
+    , [ ( -10, 0 ), ( -20, -10 ) ]
+    ]
 
 lineData2 : List ( Float, Float )
 lineData2 =
     [ ( 0, 0 ), ( 10, 10 ), ( 20, 0 ), ( 30, 15 ), ( 40, 0 ) ]
 
+
+
 lineGraphAttributes =
     { graphHeight = 100
     , graphWidth = 400
-    , xTickmarks  = 6
-    , yTickmarks = 4 
-    , scale = ( 1.0, 1.0 )
-    , options = [ Color "#067DB4", StrokeWidth 3.0 ]
+    , options = [ Color "red, blue", YTickmarks 4, Scale 1.0 1.0 ]
     }
 
 
@@ -92,7 +97,9 @@ mainColumn model =
     column mainColumnStyle
         [ column [ centerX, centerY, spacing 60, padding 40, Background.color (rgb255 240 240 240) ]
             [ title "SimpleGraph Demo"
-            , row [] [ lineChart lineGraphAttributes lineData |> Element.html ]
+            --, row [] [ lineChart lineGraphAttributes [ lineData, lineData2 ] |> Element.html ]
+            --, row [] [ lineChart lineGraphAttributes lineData |> Element.html ]
+            , row [] [ myLineChartWithDataWindow lineGraphAttributes data |> Element.html ]
             ]
         ]
 
