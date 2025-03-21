@@ -2,7 +2,7 @@ module SimpleGraph exposing (Point, GraphAttributes, Option(..)
    , DataWindow, lineChart, lineChartAsSVG
    , barChart, lineChartWithDataWindow, lineChartAsSVGWithDataWindow, barChartAsSVG
    , scatterPlot, scatterPlotAsSVG
-   , myLineChartWithDataWindow, getDataWindow)
+   , getDataWindow)
 
 {-| **SimpleGraph** is a bare-bones package for rendering data as
 line and bar charts, both as HTML and as SVG.
@@ -494,21 +494,6 @@ lineColor_ option =
             Nothing
 
 
-lineColors : List Option -> List String
-lineColors options =
-    findMap lineColors_ options
-
-
-lineColors_ : Option -> List String
-lineColors_ option =
-    case option of
-        Color str ->
-            String.split ", " str -- List
-
-        _ ->
-            Nothing
-
-
 xTickmarks : List Option -> Int
 xTickmarks options =
     findMap xTickmarks_ options |> Maybe.withDefault 0
@@ -833,115 +818,3 @@ roundTo k x =
             toFloat k
     in
         x * 10.0 ^ kk |> round |> toFloat |> (\y -> y / 10.0 ^ kk)
-        
-        
-        
-        
-        
-        
-        
-
-        
-        
-myLineChartWithDataWindow : GraphAttributes -> List ( List Point ) -> Html msg
-myLineChartWithDataWindow ga data =
-    let
-        dw = getMyDataWindow data
-    in
-        svg
-            [ SA.transform "scale(1,-1)"
-            , SA.height <| String.fromFloat (ga.graphHeight + 40)
-            , SA.width <| String.fromFloat (ga.graphWidth + 50)
-            , SA.viewBox <| "-40 -20 " ++ String.fromFloat (ga.graphWidth + 50) ++ " " ++ String.fromFloat (ga.graphHeight + 40)
-            ]
-            [ myLineChartAsSVGWithDataWindow dw ga data ]
-
-
-getMyDataWindow : List ( List Point ) -> DataWindow
-getMyDataWindow pointList =
-    let
-        getXs : List Point -> List Float
-        getXs pl = 
-            List.map Tuple.first pl
-            
-        getYs : List Point -> List Float
-        getYs pl = 
-            List.map Tuple.second pl
-            
-        getMin : List Float -> Float
-        getMin l =
-            List.minimum l |> Maybe.withDefault 0
-            
-        getMax : List Float -> Float
-        getMax l =
-            List.maximum l |> Maybe.withDefault 0
-   
-        xs = List.concatMap ( \list -> getXs list ) pointList
-        ys = List.concatMap ( \list -> getYs list ) pointList    
-
-    in
-        { xMin = getMin xs
-        , xMax = getMax xs
-        , yMin = getMin ys
-        , yMax = getMax ys
-        }
-        
-
-myLineChartAsSVGWithDataWindow : DataWindow -> GraphAttributes -> List ( List Point ) -> Svg msg
-myLineChartAsSVGWithDataWindow dw ga data =
-    let
-        scaleFactor =
-            getScaleFactor dw ga
-
-        renderPlain : List Point -> Svg msg
-        renderPlain data_ =
-            data_
-                |> translate ( -dw.xMin, -dw.yMin )
-                |> rescale scaleFactor
-                |> segments
-                |> segmentsToSVG []
-
-        --render : List Point -> Svg msg
-        render : List ( List Point ) -> List ( Svg msg )
-        render data_ =
-            let 
-                transform : List Point -> Svg msg
-                transform dat =
-                    dat
-                        |> translate ( -dw.xMin, -dw.yMin )
-                        |> rescale scaleFactor
-                        |> segments
-                        |> segmentsToSVG ga.options
-            in 
-                List.map ( \d -> transform d ) data_
-
-        theData =
-            data |> render
-            --List.concatMap ( \d -> render d ) data
-
-        abscissa =
-            [ ( dw.xMin, 0 ), ( dw.xMax, 0 ) ] |> renderPlain
-
-        ordinate =
-            [ ( dw.xMin, dw.yMin ), ( dw.xMin, dw.yMax ) ] |> renderPlain
-
-        boundingBox_ : Svg msg
-        boundingBox_ =
-            boundingBox ga.options dw |> renderPlain
-
-        xTickMarks_ =
-            makeXTickMarks scaleFactor renderPlain dw (xTickmarks ga.options)
-
-        yTickMarks_ =
-            makeYTickMarks scaleFactor renderPlain dw (yTickmarks ga.options)
-
-        xLabels =
-            makeXLabels scaleFactor dw (xTickmarks ga.options)
-
-        yLabels =
-            makeYLabels scaleFactor dw (yTickmarks ga.options)
-
-        transformer =
-            SA.transform (buildSVGTransformString ga)
-    in
-        g [ transformer ] ( theData ++ [abscissa, ordinate, boundingBox_, xTickMarks_, yTickMarks_, xLabels, yLabels] )
