@@ -68,6 +68,8 @@ type Option
     | YTickmarks Int
     | DeltaX Float
     | Scale Float Float
+    | YLabels ( List String )
+    | LineWidth Float
 
 
 {-| A DataWindow is a rectangle which determines
@@ -182,12 +184,19 @@ lineChartAsSVGWithDataWindow dw ga data =
             makeXLabels scaleFactor dw (xTickmarks ga.options)
 
         yLabels =
-            makeYLabels scaleFactor dw (yTickmarks ga.options)
+            --makeYLabels scaleFactor dw (yTickmarks ga.options)
+            makeCustomYLabels scaleFactor dw ga.options
+            
+        xTitle =
+            makeXTitle scaleFactor dw "Energy / keV"
+            
+        yTitle =
+            makeYTitle scaleFactor dw "Beamline ID"
 
         transformer =
             SA.transform (buildSVGTransformString ga)
     in
-        g [ transformer ] [ theData, abscissa, ordinate, boundingBox_, xTickMarks_, yTickMarks_, xLabels, yLabels ]
+        g [ transformer ] [ theData, abscissa, ordinate, boundingBox_, xTickMarks_, yTickMarks_, xLabels, yLabels, xTitle, yTitle ]
 
 
 buildSVGTransformString : GraphAttributes -> String
@@ -448,7 +457,8 @@ segmentToSVG options ( ( x1, y1 ), ( x2, y2 ) ) =
         , SA.x2 (String.fromFloat x2)
         , SA.y2 (String.fromFloat y2)
         , SA.stroke <| lineColor options
-        , SA.strokeWidth "1"
+        --, SA.strokeWidth "1"
+        , SA.strokeWidth <| String.fromFloat ( lineWidth options)
         ]
         []
 
@@ -524,6 +534,21 @@ yTickmarks_ option =
             Nothing
 
 
+myYLabels : List Option -> List String
+myYLabels options =
+    findMap myYLabels_ options |> Maybe.withDefault []
+
+
+myYLabels_ : Option -> Maybe ( List String )
+myYLabels_ option =
+    case option of
+        YLabels k ->
+            Just k
+
+        _ ->
+            Nothing
+
+
 scale : List Option -> ( Float, Float )
 scale options =
     findMap scale_ options |> Maybe.withDefault ( 1.0, 1.0 )
@@ -534,6 +559,21 @@ scale_ option =
     case option of
         Scale kx ky ->
             Just ( kx, ky )
+
+        _ ->
+            Nothing
+
+
+lineWidth : List Option -> Float
+lineWidth options =
+    findMap lineWidth_ options |> Maybe.withDefault 1.0
+
+
+lineWidth_ : Option -> Maybe Float
+lineWidth_ option =
+    case option of
+        LineWidth k ->
+            Just k
 
         _ ->
             Nothing
@@ -605,7 +645,67 @@ makeYLabels ( kx, ky ) dw n =
                 |> List.map (\k -> dw.yMin + (toFloat k) * (dw.yMax - dw.yMin) / (toFloat (n - 1)))
                 |> List.map (makeYLabel ( kx, ky ) dw)
                 |> (\x -> g [] x)
+                
 
+makeCustomYLabels : ( Float, Float ) -> DataWindow -> List Option -> Svg msg
+makeCustomYLabels ( kx, ky ) dw options =
+    let
+        n = yTickmarks options
+        lbls = myYLabels options
+    in
+        case n == 0 of
+            True ->
+                g [] []
+
+            False ->
+                List.range 0 (n - 1)
+                    |> List.map (\k -> dw.yMin + (toFloat k) * (dw.yMax - dw.yMin) / (toFloat (n - 1)))
+                    |> List.map2 (makeCustomYLabel ( kx, ky ) dw) lbls -- should receive the correct item of lbls list
+                    |> (\x -> g [] x)
+
+
+makeCustomYLabel : ( Float, Float ) -> DataWindow -> String -> Float -> Svg msg
+makeCustomYLabel ( kx, ky ) dw label y =
+    let
+        dy =
+            String.fromFloat (ky * (y - dw.yMin) - 3)
+    in
+        text_
+            [ SA.transform <| "translate(0," ++ dy ++ ") scale(1,-1)"
+            , SA.x <| String.fromFloat -30
+            , SA.y <| "0"
+            , SA.fontSize "9px"
+            ]
+            [ text label ]
+
+
+makeXTitle : ( Float, Float ) -> DataWindow -> String -> Svg msg
+makeXTitle ( kx, ky ) dw title =
+    let 
+        centerX = kx * ( dw.xMin + 0.5 * (dw.xMax - dw.xMin) )
+    in
+        text_ [ SA.transform <| "translate(0,0) scale(1,-1)"
+              , SA.x <| String.fromFloat centerX
+              , SA.y <| "40"
+              , SA.fontSize "12px"
+              , SA.textAnchor "middle"
+              ]
+              [ text title ]
+
+
+makeYTitle : ( Float, Float ) -> DataWindow -> String -> Svg msg
+makeYTitle ( kx, ky ) dw title =
+    let 
+        centerX = kx * ( dw.xMin + 0.5 * (dw.xMax - dw.xMin) )
+        centerY = ky * ( dw.yMin + 0.5 * (dw.yMax - dw.yMin) )
+    in
+        text_ [ SA.transform <| "translate(0,0) scale(1,-1) rotate(-90, 0, 0)"
+              , SA.x <| String.fromFloat centerY
+              , SA.y <| "-40"
+              , SA.fontSize "12px"
+              , SA.textAnchor "middle"
+              ]
+              [ text title ]
 
 
 --
