@@ -1,8 +1,7 @@
 module SimpleGraph exposing (Point, GraphAttributes, Option(..)
    , DataWindow, lineChart, lineChartAsSVG
-   , barChart, lineChartWithDataWindow, lineChartAsSVGWithDataWindow, barChartAsSVG
-   , scatterPlot, scatterPlotAsSVG
-   , getDataWindow)
+   , barChart, lineChartWithDataWindow, lineChartsWithDataWindow, lineChartAsSVGWithDataWindow, barChartAsSVG
+   , scatterPlot, scatterPlotAsSVG)
 
 {-| **SimpleGraph** is a bare-bones package for rendering data as
 line and bar charts, both as HTML and as SVG.
@@ -134,6 +133,45 @@ lineChartWithDataWindow dw ga data =
         , SA.viewBox <| "-40 -20 " ++ String.fromFloat (ga.graphWidth + 50) ++ " " ++ String.fromFloat (ga.graphHeight + 40)
         ]
         [ lineChartAsSVGWithDataWindow dw ga data ]
+
+
+{-| This function is like lineChartWithDataWindow, but handling
+lists of datasets with corresponding lists of attributes.
+Except for color and linewidth, only the values of the first
+attribute record are evaluated here. However,
+lineChartAsSVGWithDataWindow is dependent on each attribute set
+again. Therefore, the attributes must be identical, except for
+color and linewidth. It also means that the axes and ticks are
+plotted for each dataset. The DataWindow is calculated from
+the minimal and maximal values of all datasets.
+-}
+lineChartsWithDataWindow : List ( GraphAttributes ) -> List ( List ( Float, Float ) ) -> Html msg
+lineChartsWithDataWindow attr data =
+    let
+        h = Maybe.withDefault 100 ( List.head attr |> Maybe.map .graphHeight )
+        w = Maybe.withDefault 400 ( List.head attr |> Maybe.map .graphWidth )
+        xs = List.concatMap ( List.map fst ) data
+        ys = List.concatMap ( List.map snd ) data
+        x_min = Maybe.withDefault 0 ( List.minimum xs )
+        x_max = Maybe.withDefault 0 ( List.maximum xs )
+        y_min = Maybe.withDefault 0 ( List.minimum ys )
+        y_max = Maybe.withDefault 0 ( List.maximum ys )
+        x_margin = 0
+        y_margin = 0
+        dw = getDataWindow [ ( x_min - x_margin, y_min - y_margin ), ( x_max + x_margin, y_max + y_margin ) ]
+
+        fst : ( a, b ) -> a
+        fst ( x, _ ) = x
+        snd : ( a, b ) -> b
+        snd ( _, y ) = y
+    in
+        svg
+            [ SA.transform "scale(1,-1)"
+            , SA.height <| String.fromFloat ( h + 60 )
+            , SA.width <| String.fromFloat ( w + 70 )
+            , SA.viewBox <| "-60 -50 " ++ String.fromFloat ( w + 70 ) ++ " " ++ String.fromFloat ( h + 60 )
+            ]
+            ( List.map2 ( \a d  -> lineChartAsSVGWithDataWindow dw a d ) attr data )
 
 
 {-| Render a list of points to Svg as a line chart using the parameters
