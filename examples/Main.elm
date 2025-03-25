@@ -21,7 +21,7 @@ import Svg.Attributes as SA
 energies = [ [0.25, 3.0], [5.0, 45.0], [5.0, 50.0], [4.0, 44.0], [4.0, 44.0] ]
 ids = [ "P04", "P06", "P23", "P64", "P65" ]
 
-prep_x_data : List ( List Float ) -> List ( List Float )
+prep_x_data : List ( List Float ) -> List ( List ( Float, Float ) )
 prep_x_data raw_data =
     -- input: raw_data, e.g. energies or temperatures as received from sparql query
     -- output: print-ready data_set
@@ -39,11 +39,12 @@ prep_x_data raw_data =
             |> ( \v -> toFloat ( ( Basics.floor ( v / 5 ) + 1 ) * 5 ) )
         d1list = List.reverse ( [ max ] :: List.reverse ( [ min ] :: raw_data ) )
     in
+        -- aim: [ [(0,0)], [ (5, 1), (10, 1) ], [ (15, 2), (40, 2) ], ..., [(x_max, n+1)] ]
         List.map2 (
-    \e_min_max idx -> List.map (
-        \e -> ( e, toFloat ( idx-1 ) )
-        ) e_min_max
-    ) d1list ( List.range 1 ( List.length d1list ) )
+            \min_max idx -> List.map (
+                \e -> ( e, toFloat ( idx-1 ) )
+                ) min_max
+            ) d1list ( List.range 1 ( List.length d1list ) )
 
 prep_y_data : List String -> List String
 prep_y_data id_list =
@@ -55,8 +56,8 @@ bl_ids = prep_y_data ids
 lgas = List.map ( \e -> { graphHeight = 200
                         , graphWidth = 800
                         , options = [ Color "blue"
-                                    , YTickmarks ( List.length es )
-                                    , XTickmarks (  1 + ( es
+                                    , YTickmarks ( 2+ ( List.length energies ) )
+                                    , XTickmarks ( 1 + ( energies
                                         |> List.concat
                                         |> List.maximum
                                         |> Maybe.withDefault 9.0
@@ -67,13 +68,7 @@ lgas = List.map ( \e -> { graphHeight = 200
                                     , YLabels bl_ids
                                     , LineWidth 10.0
                                     ]
-                        } ) es
-
-e_data = List.map2 (
-    \e_min_max idx -> List.map (
-        \e -> ( e, toFloat ( idx-1 ) )
-        ) e_min_max
-    ) es ( List.range 1 ( List.length es ) )
+                        } ) ( List.concat energies )
     
 
 
