@@ -69,6 +69,8 @@ type Option
     | Scale Float Float
     | YLabels ( List String )
     | LineWidth Float
+    | XTitle String
+    | YTitle String
 
 
 {-| A DataWindow is a rectangle which determines
@@ -226,10 +228,10 @@ lineChartAsSVGWithDataWindow dw ga data =
             makeCustomYLabels scaleFactor dw ga.options
             
         xTitle =
-            makeXTitle scaleFactor dw "Energy / keV"
+            makeXTitle scaleFactor dw (getXTitle ga.options)
             
         yTitle =
-            makeYTitle scaleFactor dw "Beamline ID"
+            makeYTitle scaleFactor dw (getYTitle ga.options)
 
         transformer =
             SA.transform (buildSVGTransformString ga)
@@ -616,6 +618,35 @@ lineWidth_ option =
         _ ->
             Nothing
 
+
+getXTitle : List Option -> String
+getXTitle options =
+    findMap getXTitle_ options |> Maybe.withDefault "x Title"
+
+
+getXTitle_ : Option -> Maybe String
+getXTitle_ option =
+    case option of
+        XTitle k ->
+            Just k
+
+        _ ->
+            Nothing
+
+
+getYTitle : List Option -> String
+getYTitle options =
+    findMap getYTitle_ options |> Maybe.withDefault "y Title"
+
+
+getYTitle_ : Option -> Maybe String
+getYTitle_ option =
+    case option of
+        YTitle k ->
+            Just k
+
+        _ ->
+            Nothing
 
 
 --
