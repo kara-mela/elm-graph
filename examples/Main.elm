@@ -16,10 +16,6 @@ import Svg.Attributes as SA
 --
 -- DATA
 --
- 
--- example output for x-ray absorption spectroscopy
-energies = [ [0.25, 3.0], [5.0, 45.0], [5.0, 50.0], [4.0, 44.0], [4.0, 44.0] ]
-ids = [ "P04", "P06", "P23", "P64", "P65" ]
 
 prep_x_data : List ( List Float ) -> List ( List ( Float, Float ) )
 prep_x_data raw_data =
@@ -50,26 +46,41 @@ prep_y_data : List String -> List String
 prep_y_data id_list =
     -- add dummy entries at beginning and end to adapt to the changes from prep_x_data
     List.reverse ( "" :: List.reverse ( "" :: id_list ) )
-        
-es = prep_x_data energies 
+
+
+getGraphAttributes : List ( List Float ) -> List String -> List ( GraphAttributes )
+getGraphAttributes data labels =
+    let
+        --xSteps = 5.0
+        xMax = data |> List.concat |> List.maximum |> Maybe.withDefault 9.0
+        xMin = data |> List.concat |> List.minimum |> Maybe.withDefault 0.0
+        xSteps = if xMax - xMin < 100 then
+                5.0
+            else
+                50.0
+        xTicks = -- amount of ticks on x axis
+            ( 2 + ( xMax
+                |> ( \v -> v / xSteps )
+                |> round
+            ) )
+    in
+        List.map ( \e -> { graphHeight = 200
+                         , graphWidth = 550
+                         , options = [ Color "var(--desy-orange, orange)" -- use desy-orange when available, else orange
+                                     , YTickmarks ( 2 + ( List.length data ) )
+                                     , XTickmarks xTicks
+                                     , Scale 1.0 1.0
+                                     , YLabels labels
+                                     , LineWidth 10.0
+                                     , XTitle "E"
+                                     , YTitle "BL"
+                                     ]
+                         } ) ( List.concat data )
+
+-- example output for x-ray absorption spectroscopy
+energies = [ [0.25, 3.0], [5.0, 45.0], [5.0, 50.0], [4.0, 44.0], [4.0, 44.0] ]
+ids = [ "P04", "P06", "P23", "P64", "P65" ]
 bl_ids = prep_y_data ids
-lgas = List.map ( \e -> { graphHeight = 200
-                        , graphWidth = 800
-                        , options = [ Color "blue"
-                                    , YTickmarks ( 2+ ( List.length energies ) )
-                                    , XTickmarks ( 1 + ( energies
-                                        |> List.concat
-                                        |> List.maximum
-                                        |> Maybe.withDefault 9.0
-                                        |> ( \v -> v / 5.0 )
-                                        |> round
-                                        ) )
-                                    , Scale 1.0 1.0 
-                                    , YLabels bl_ids
-                                    , LineWidth 10.0
-                                    ]
-                        } ) ( List.concat energies )
-    
 
 
 --
@@ -132,7 +143,7 @@ mainColumn model =
     column mainColumnStyle
         [ column [ centerX, centerY, spacing 60, padding 40, Background.color (rgb255 240 240 240) ]
             --[ row [] [ lineChartsWithDataWindow lgaList lineDataList |> Element.html ] ]
-            [ row [] [ lineChartsWithDataWindow lgas es |> Element.html ] ]
+            [ row [] [ SimpleGraph.lineChartsWithDataWindow ( getGraphAttributes energies bl_ids ) ( prep_x_data energies ) |> Element.html ] ]
         ]
 
 
