@@ -743,7 +743,7 @@ makeCustomYLabel ( kx, ky ) dw label y =
             [ SA.transform <| "translate(0," ++ dy ++ ") scale(1,-1)"
             , SA.x <| String.fromFloat -30
             , SA.y <| "0"
-            , SA.fontSize "9px"
+            , SA.fontSize "12px"
             ]
             [ text label ]
 
