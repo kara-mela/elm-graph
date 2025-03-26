@@ -667,7 +667,7 @@ makeYLabel ( kx, ky ) dw y =
             [ SA.transform <| "translate(0," ++ dy ++ ") scale(1,-1)"
             , SA.x <| String.fromFloat -30
             , SA.y <| "0"
-            , SA.fontSize "9px"
+            , SA.fontSize "12px"
             ]
             [ text label ]
 
@@ -698,7 +698,7 @@ makeXLabel ( kx, ky ) dw x =
             [ SA.transform <| "translate(" ++ dx ++ ",0) scale(1,-1)"
             , SA.x <| "-8"
             , SA.y <| "20"
-            , SA.fontSize "9px"
+            , SA.fontSize "12px"
             ]
             [ text label ]
 
@@ -756,7 +756,7 @@ makeXTitle ( kx, ky ) dw title =
         text_ [ SA.transform <| "translate(0,0) scale(1,-1)"
               , SA.x <| String.fromFloat centerX
               , SA.y <| "40"
-              , SA.fontSize "12px"
+              , SA.fontSize "16px"
               , SA.textAnchor "middle"
               ]
               [ text title ]
@@ -771,7 +771,7 @@ makeYTitle ( kx, ky ) dw title =
         text_ [ SA.transform <| "translate(0,0) scale(1,-1) rotate(-90, 0, 0)"
               , SA.x <| String.fromFloat centerY
               , SA.y <| "-40"
-              , SA.fontSize "12px"
+              , SA.fontSize "16px"
               , SA.textAnchor "middle"
               ]
               [ text title ]
