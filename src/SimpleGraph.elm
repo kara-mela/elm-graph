@@ -621,7 +621,7 @@ lineWidth_ option =
 
 getXTitle : List Option -> String
 getXTitle options =
-    findMap getXTitle_ options |> Maybe.withDefault "x Title"
+    findMap getXTitle_ options |> Maybe.withDefault ""
 
 
 getXTitle_ : Option -> Maybe String
@@ -636,7 +636,7 @@ getXTitle_ option =
 
 getYTitle : List Option -> String
 getYTitle options =
-    findMap getYTitle_ options |> Maybe.withDefault "y Title"
+    findMap getYTitle_ options |> Maybe.withDefault ""
 
 
 getYTitle_ : Option -> Maybe String
