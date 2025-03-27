@@ -79,7 +79,7 @@ getGraphAttributes data labels =
 
 -- example output for x-ray absorption spectroscopy
 energies = [ [0.25, 3.0], [5.0, 45.0], [5.0, 50.0], [4.0, 44.0], [4.0, 44.0] ]
-ids = [ "P02.1", "P61B", "P07-DESY", "P64", "P65" ]
+ids = [ "P02.1", "P61B", "P07 DESY", "P64", "P65" ]
 bl_ids = prep_y_data ids
 
 

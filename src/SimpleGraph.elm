@@ -748,7 +748,6 @@ makeCustomYLabel ( kx, ky ) dw label y =
             , SA.y <| "0"
             , SA.fontSize "12px"
             ]
-            --[ text label ]
             [ text (adjust_lbl label) ]
 
 
