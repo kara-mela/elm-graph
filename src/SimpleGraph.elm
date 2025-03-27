@@ -170,8 +170,8 @@ lineChartsWithDataWindow attr data =
         svg
             [ SA.transform "scale(1,-1)"
             , SA.height <| String.fromFloat ( h + 60 )
-            , SA.width <| String.fromFloat ( w + 70 )
-            , SA.viewBox <| "-60 -50 " ++ String.fromFloat ( w + 70 ) ++ " " ++ String.fromFloat ( h + 60 )
+            , SA.width <| String.fromFloat ( w + 80 )
+            , SA.viewBox <| "-70 -50 " ++ String.fromFloat ( w + 80 ) ++ " " ++ String.fromFloat ( h + 60 )
             ]
             ( List.map2 ( \a d  -> lineChartAsSVGWithDataWindow dw a d ) attr data )
 
@@ -738,14 +738,18 @@ makeCustomYLabel ( kx, ky ) dw label y =
     let
         dy =
             String.fromFloat (ky * (y - dw.yMin) - 3)
+        adjust_lbl : String -> String
+        adjust_lbl lbl =
+            String.replace " " "\n" lbl
     in
         text_
             [ SA.transform <| "translate(0," ++ dy ++ ") scale(1,-1)"
-            , SA.x <| String.fromFloat -30
+            , SA.x <| String.fromFloat -40
             , SA.y <| "0"
             , SA.fontSize "12px"
             ]
-            [ text label ]
+            --[ text label ]
+            [ text (adjust_lbl label) ]
 
 
 makeXTitle : ( Float, Float ) -> DataWindow -> String -> Svg msg
@@ -770,7 +774,7 @@ makeYTitle ( kx, ky ) dw title =
     in
         text_ [ SA.transform <| "translate(0,0) scale(1,-1) rotate(-90, 0, 0)"
               , SA.x <| String.fromFloat centerY
-              , SA.y <| "-40"
+              , SA.y <| "-50"
               , SA.fontSize "16px"
               , SA.textAnchor "middle"
               ]
