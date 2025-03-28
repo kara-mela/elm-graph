@@ -491,16 +491,24 @@ segments list =
 
 segmentToSVG : List Option -> Segment -> Svg msg
 segmentToSVG options ( ( x1, y1 ), ( x2, y2 ) ) =
-    line
-        [ SA.x1 (String.fromFloat x1)
-        , SA.y1 (String.fromFloat y1)
-        , SA.x2 (String.fromFloat x2)
-        , SA.y2 (String.fromFloat y2)
-        , SA.stroke <| lineColor options
-        --, SA.strokeWidth "1"
-        , SA.strokeWidth <| String.fromFloat ( lineWidth options)
-        ]
-        []
+    if x1 == x2 && y1 == y2 then
+        circle [ SA.cx (String.fromFloat x1)
+               , SA.cy (String.fromFloat y1)
+               , SA.r (String.fromFloat (0.7*(lineWidth options)))
+               , SA.fill ( lineColor options )
+               ]
+               []
+    else
+        line
+            [ SA.x1 (String.fromFloat x1)
+            , SA.y1 (String.fromFloat y1)
+            , SA.x2 (String.fromFloat x2)
+            , SA.y2 (String.fromFloat y2)
+            , SA.stroke <| lineColor options
+            --, SA.strokeWidth "1"
+            , SA.strokeWidth <| String.fromFloat ( lineWidth options)
+            ]
+            []
 
 
 segmentsToSVG : List Option -> List Segment -> Svg msg
