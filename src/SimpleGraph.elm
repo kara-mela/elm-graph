@@ -687,7 +687,7 @@ makeXLabels ( kx, ky ) dw n =
             g [] []
 
         False ->
-            List.range 0 (n - 1)
+            List.range 1 (n - 2)
                 |> List.map (\k -> dw.xMin + (toFloat k) * (dw.xMax - dw.xMin) / (toFloat (n - 1)))
                 |> List.map (makeXLabel ( kx, ky ) dw)
                 |> (\x -> g [] x)
